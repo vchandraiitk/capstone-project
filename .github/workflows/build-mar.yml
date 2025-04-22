@@ -32,5 +32,6 @@ jobs:
             --model-file gat_model.py \
             --serialized-file artifacts/gnn_model.pt \
             --handler model.py \
-            --export-path model_store
+            --export-path model_store \
+            --force
 
