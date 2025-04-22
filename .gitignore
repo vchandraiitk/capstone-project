@@ -1,5 +1,17 @@
-data/staging/enriched_stock_data.csv
+# Virtual environments
+.venv/
 venv/
+.DS_Store
+# Python virtual env files
+.env/*
+
+# Output data
 data/staging/enriched_stock_data.csv
-venv/
+
+# macOS binary libs
 *.dylib
+data/.DS_Store
+data/staging/.DS_Store
+data/staging/__MACOSX/
+data/staging/stock_data_final_transformed.csv
+data/staging/stock_data_with_stationary.csv
