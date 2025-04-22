@@ -30,7 +30,7 @@ jobs:
             --model-name gat \
             --version 1.0 \
             --model-file gat_model.py \
-            --serialized-file artifacts/gnn_lstm_model.pt \
+            --serialized-file artifacts/gnn_model.pt \
             --handler model.py \
             --export-path model_store
 
