@@ -1,2 +1,5 @@
 data/staging/enriched_stock_data.csv
 venv/
+data/staging/enriched_stock_data.csv
+venv/
+*.dylib
