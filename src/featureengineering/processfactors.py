@@ -1,3 +1,4 @@
+import zipfile
 import os
 import pandas as pd
 import sys 
@@ -88,21 +89,35 @@ def load_and_merge_economic_factors(df_stock: pd.DataFrame, factor_map: dict, su
     )
     return df_enriched
 
+import zipfile
+
 def save_enriched_data(df: pd.DataFrame, filename: str = "enriched_stock_data.csv", folder: str = "data/staging") -> None:
-    """Saves the enriched DataFrame to CSV after deleting any existing version."""
+    """Saves the enriched DataFrame as a ZIP-compressed CSV file."""
     save_dir = get_data_path("", folder)
     os.makedirs(save_dir, exist_ok=True)
 
-    output_path = os.path.join(save_dir, filename)
+    csv_path = os.path.join(save_dir, filename)
+    zip_path = os.path.join(save_dir, filename.replace(".csv", ".zip"))
 
-    # Delete existing file if it exists
-    if os.path.exists(output_path):
-        os.remove(output_path)
-        print(f"🗑️ Deleted existing file: {output_path}")
+    # Delete existing files
+    if os.path.exists(csv_path):
+        os.remove(csv_path)
+        print(f"🗑️ Deleted old CSV: {csv_path}")
+    if os.path.exists(zip_path):
+        os.remove(zip_path)
+        print(f"🗑️ Deleted old ZIP: {zip_path}")
 
-    # Save the new enriched data
-    df.to_csv(output_path, index=False)
-    print(f"✅ Enriched data saved to: {output_path}")
+    # Save as CSV
+    df.to_csv(csv_path, index=False)
+
+    # Compress it to ZIP
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        zipf.write(csv_path, arcname=filename)
+    print(f"✅ Zipped CSV saved to: {zip_path}")
+
+    # Optionally delete raw CSV after zipping
+    os.remove(csv_path)
+    print(f"🧹 Removed uncompressed CSV after zipping.")
 
 
 def main(df_stock: pd.DataFrame) -> pd.DataFrame:
