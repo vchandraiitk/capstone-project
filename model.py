@@ -10,7 +10,7 @@ class GATHandler(BaseHandler):
     def initialize(self, ctx):
         model_dir = ctx.system_properties.get("model_dir")
         self.model = GAT(in_channels=124)  # replace 124 with your feature count
-        self.model.load_state_dict(torch.load(f"{model_dir}/gnn_lstm_model.pt"))
+        self.model.load_state_dict(torch.load(f"{model_dir}/gnn_model.pt"))
         self.model.eval()
 
     def handle(self, data, context):

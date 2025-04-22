@@ -117,7 +117,7 @@ def plot_unscaled_predictions(pred, graph_data, df, ticker_index_map):
         unscaled_actuals.append(graph_data.y[idx].item() * std + mean)
 
     fig_width = min(50, max(12, len(tickers_used) * 0.8))
-    fig_height = max(8, len(tickers_used) * 0.4)
+    fig_height = max(8, len(tickers_used) * 0.1)
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
 
     ax.plot(unscaled_actuals, label="Actual ₹", marker='o', color='black', markersize=6, linewidth=1.5)
@@ -192,8 +192,12 @@ def build_graph(df, granger_df):
 def main():
     df, granger_df = load_data()
     graph_data, ticker_index_map, full_df = build_graph(df, granger_df)
+    print("🔢 INPUT_FEATURE_SIZE =", graph_data.num_node_features)
     model = train_gcn(graph_data)
     pred = evaluate(model, graph_data)
+    # Save model for TorchServe
+    torch.save(model.state_dict(), get_artifact_path("gnn_model.pt"))
+
     plot_scaled_predictions(graph_data, pred)
     plot_unscaled_predictions(pred, graph_data, full_df, ticker_index_map)
 
