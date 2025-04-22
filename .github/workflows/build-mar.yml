@@ -1,0 +1,36 @@
+name: Archive GAT model
+
+on:
+  push:
+    paths:
+      - 'artifacts/gnn_model.pt'
+
+jobs:
+  archive-mar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install torch torchserve torch-model-archiver
+
+      - name: Create model_store
+        run: mkdir -p model_store
+
+      - name: Archive model
+        run: |
+          torch-model-archiver \
+            --model-name gat \
+            --version 1.0 \
+            --model-file gat_model.py \
+            --serialized-file artifacts/gnn_lstm_model.pt \
+            --handler model.py \
+            --export-path model_store
+
