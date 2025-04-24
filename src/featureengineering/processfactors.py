@@ -70,7 +70,17 @@ def load_and_merge_economic_factors(df_stock: pd.DataFrame, factor_map: dict, su
             df_econ.columns = ['Date', factor]
 
         df_econ = df_econ[~df_econ.duplicated(subset='Date', keep='first')]
-        df_econ = df_econ.set_index('Date').reindex(all_dates).ffill().reset_index()
+        ##df_econ = df_econ.set_index('Date').reindex(all_dates).ffill().reset_index()
+        ##df_econ = df_econ.set_index('Date').reindex(all_dates).interpolate(method='linear').reset_index()
+        df_econ = (
+            df_econ.set_index('Date')
+           .reindex(all_dates)
+           .interpolate(method='linear')
+           .ffill()
+           .bfill()
+           .reset_index()
+        )
+
         df_econ.columns = ['Date', factor]
         df_econ[factor + '_pct'] = df_econ[factor].pct_change()
 
@@ -116,7 +126,7 @@ def save_enriched_data(df: pd.DataFrame, filename: str = "enriched_stock_data.cs
     print(f"✅ Zipped CSV saved to: {zip_path}")
 
     # Optionally delete raw CSV after zipping
-    os.remove(csv_path)
+    #os.remove(csv_path)
     print(f"🧹 Removed uncompressed CSV after zipping.")
 
 

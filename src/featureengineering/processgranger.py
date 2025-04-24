@@ -108,9 +108,21 @@ def main():
     print("⚙️ Running Granger causality analysis...")
     flat_results = run_granger_parallel(df_clean)
 
-    granger_df = pd.DataFrame(flat_results).sort_values(['Ticker', 'p-value'])
+##    granger_df = pd.DataFrame(flat_results).sort_values(['Ticker', 'p-value'])
+##    output_path = get_data_path(OUTPUT_FILE)
+##    granger_df.to_csv(output_path, index=False)
+##    ✅ Keep only top 3 significant causal factors per ticker
+    granger_df = (
+       pd.DataFrame(flat_results)
+         .sort_values(['Ticker', 'p-value'])
+         .groupby('Ticker')
+         .head(3)
+      )
+
     output_path = get_data_path(OUTPUT_FILE)
     granger_df.to_csv(output_path, index=False)
+    print(f"✅ Saved top 3 Granger results per ticker to {output_path}")
+
     print(f"✅ Saved Granger results to {output_path}")
 
 # ---------- ENTRY POINT ----------

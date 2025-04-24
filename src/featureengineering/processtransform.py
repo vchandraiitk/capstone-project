@@ -48,6 +48,17 @@ def load_input_dataframe() -> pd.DataFrame:
     df = pd.read_csv(csv_path, parse_dates=['Date'])
     return df.sort_values(['Ticker', 'Date'])
 
+def normalize_column_back(df: pd.DataFrame, col: str) -> pd.DataFrame:
+    scaler = MinMaxScaler()
+    df = df.sort_values(['Ticker', 'Date']).copy()
+    scaled_col_name = f"{col.replace('_stationary', '')}_scaled"
+
+    df[scaled_col_name] = df.groupby('Ticker')[col].transform(
+        lambda x: scaler.fit_transform(x.fillna(method='ffill').values.reshape(-1, 1)).flatten()
+                  if x.notna().sum() > 1 else pd.Series([np.nan] * len(x), index=x.index)
+    )
+    return df[['Date', 'Ticker', scaled_col_name]]
+
 def normalize_column(df: pd.DataFrame, col: str) -> pd.DataFrame:
     scaler = MinMaxScaler()
     df_sorted = df.sort_values(['Ticker', 'Date']).copy()
@@ -67,7 +78,7 @@ def save_compressed_output(df: pd.DataFrame):
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         zipf.write(csv_path, arcname=OUTPUT_CSV)
 
-    os.remove(csv_path)
+    ##os.remove(csv_path)
     print(f"✅ Final normalized data saved and zipped at: {zip_path}")
 
 # ---------- MAIN ----------

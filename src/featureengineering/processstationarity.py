@@ -88,7 +88,9 @@ def main():
     df = load_enriched_data()
 #    df = df.head(2)
     print("⚙️ Running stationarity checks...")
-
+    #print(df.head(2))
+    #df = df[df['Ticker'].str.strip().str.upper() == 'RELIANCE']
+    #print(df.shape)
     # Create partial function to inject df
     process_func = partial(process_stationary_column, df)
 
