@@ -188,6 +188,73 @@ def build_graph(df, granger_df):
     graph_data = Data(x=torch.stack(node_features), edge_index=edge_index, y=torch.stack(node_labels).squeeze())
     return graph_data, ticker_index_map, df
 
+def forecast_future_prices(model, df, granger_df, horizons=[30, 180, 365]):
+    model.eval()
+    tickers = df['Ticker'].unique()
+    forecasts = []
+
+    # One-hot encode Industry
+    encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    industry_encoded = encoder.fit_transform(df[['Industry']].fillna('Unknown'))
+    industry_encoded_df = pd.DataFrame(industry_encoded, columns=encoder.get_feature_names_out(['Industry']))
+    df = pd.concat([df.reset_index(drop=True), industry_encoded_df], axis=1)
+
+    for ticker in tickers:
+        sub_df = df[df['Ticker'] == ticker].dropna()
+        if sub_df.empty:
+            continue
+        last_row = sub_df.iloc[-1]
+
+        # Build feature list from Granger + time + diff + industry
+        features = list(set(
+            [
+                f.replace('_stationary', '') + '_scaled'
+                for f in granger_df[granger_df['Ticker'] == ticker]['Factor'].tolist()
+                if f.replace('_stationary', '') + '_scaled' in df.columns
+            ]
+            + ['time_index_scaled', 'Close_scaled_diff']
+            + list(industry_encoded_df.columns)
+        ))
+
+        mean_close = sub_df['Close'].mean()
+        std_close = sub_df['Close'].std()
+        base_time_idx = last_row['time_index']
+
+        for h in horizons:
+            new_time_index = base_time_idx + h
+            new_time_index_scaled = (new_time_index - sub_df['time_index'].mean()) / sub_df['time_index'].std()
+
+            feat_vals = []
+            for f in features:
+                if f == 'time_index_scaled':
+                    feat_vals.append(new_time_index_scaled)
+                elif f == 'Close_scaled_diff':
+                    feat_vals.append(0.0)  # Assume no momentum change
+                else:
+                    try:
+                        val = float(last_row[f])
+                        if pd.isna(val):
+                            val = 0.0
+                    except (KeyError, ValueError, TypeError):
+                        val = 0.0
+                    feat_vals.append(val)
+
+            x_tensor = torch.tensor([feat_vals], dtype=torch.float)
+            with torch.no_grad():
+                pred_scaled = model(x_tensor).item()
+            pred_unscaled = pred_scaled * std_close + mean_close
+
+            forecasts.append({
+                'Ticker': ticker,
+                'Forecast_Horizon_Days': h,
+                'Predicted_Close_Price': pred_unscaled
+            })
+
+    forecast_df = pd.DataFrame(forecasts)
+    forecast_csv_path = get_artifact_path("gnn_forecast_1_6_12_months.csv")
+    forecast_df.to_csv(forecast_csv_path, index=False)
+    print(f"📤 Forecasts saved to: {forecast_csv_path}")
+
 # ---------- MAIN ----------
 def main():
     df, granger_df = load_data()
@@ -195,11 +262,16 @@ def main():
     print("🔢 INPUT_FEATURE_SIZE =", graph_data.num_node_features)
     model = train_gcn(graph_data)
     pred = evaluate(model, graph_data)
+
     # Save model for TorchServe
     torch.save(model.state_dict(), get_artifact_path("gnn_model.pt"))
 
     plot_scaled_predictions(graph_data, pred)
     plot_unscaled_predictions(pred, graph_data, full_df, ticker_index_map)
 
+    # Forecast 1, 6, 12 months
+    forecast_future_prices(model, full_df, granger_df)
+
 if __name__ == "__main__":
     main()
+
