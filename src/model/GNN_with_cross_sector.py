@@ -22,7 +22,7 @@ CSV_GRANGER = "granger_all_tickers.csv"
 CSV_INDUSTRY = "Ticker-Industry.csv"
 ARTIFACT_FOLDER = "artifacts"
 PLOT_FILE = "gnn_vs_actual_prices_hd.png"
-
+CROSS_SECTOR="cross_sector_edges.json"
 # ---------- PATH UTILS ----------
 def get_project_root():
     return os.getcwd()
@@ -178,7 +178,7 @@ def build_graph(df, granger_df):
     #     # You can expand more...
     # }
     
-    with open('cross_sector_edges.json', 'r') as f:
+    with open(get_data_path(CROSS_SECTOR), 'r') as f:
         cross_sector_edges = json.load(f)
     edges = []
     for t1 in valid_tickers:
