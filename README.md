@@ -39,6 +39,8 @@ Objective of this project is to build a predictive model for stock prices by com
 - Enhanced prediction of price movements with causal relationships.
 - Advanced risk assessment for institutional and retail investors.
 
+### HLD & Workflow
+![image](https://github.com/user-attachments/assets/7f632bf8-044f-43f9-9ad7-67471465b2f8)
 
 ## 🛠️ How We Built It
 Briefly outline the technologies, frameworks, and tools used in development.
