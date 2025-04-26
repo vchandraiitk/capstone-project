@@ -84,21 +84,17 @@ def build_graph(df, granger_df, ticker):
     last_row = df.iloc[-1]
     feat_vals = [last_row[f] for f in feature_cols]
 
-    x = torch.tensor(feat_vals, dtype=torch.float).unsqueeze(0)  # Single node
-    edge_index = torch.empty((2, 0), dtype=torch.long)  # No neighbors
-    return Data(x=x, edge_index=edge_index), last_row['Date'], last_row['Close'], df, feature_cols
+    x = torch.tensor(feat_vals, dtype=torch.float).unsqueeze(0)
+    edge_index = torch.empty((2, 0), dtype=torch.long)
+    return Data(x=x, edge_index=edge_index), last_row['Close'], df, feature_cols, len(feat_vals)
 
 # ---------- FORECAST ----------
-def forecast_percent_return(df, ticker, days):
-    data, last_date, last_price, full_df, feature_cols = build_graph(df, granger_df, ticker)
-    future_date = last_date + pd.Timedelta(days=days)
+def forecast_percent_return(df, ticker, model_path, days):
+    data, last_price, full_df, feature_cols, input_size = build_graph(df, granger_df, ticker)
 
-    future_price_row = full_df[full_df['Date'] == future_date]
-    if future_price_row.empty:
-        raise ValueError(f"Not enough data to forecast {days} days ahead for {ticker}")
-
-    model = GAT(data.num_node_features)
-    model.load_state_dict(torch.load(get_artifact_path("gnn_model.pt")))
+    checkpoint = torch.load(model_path)
+    model = GAT(input_size)
+    model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
 
     with torch.no_grad():
@@ -108,15 +104,18 @@ def forecast_percent_return(df, ticker, days):
         pred_price = pred_price_scaled * std + mean
 
     pct_return = (pred_price - last_price) / last_price * 100
-    return {"Ticker": ticker, "DaysAhead": days, "ForecastReturn%": round(pct_return, 2)}
+    return {
+        "Ticker": ticker,
+        "DaysAhead": days,
+        "ForecastReturn%": round(pct_return, 2)
+    }
 
 # ---------- MAIN ----------
 def main(ticker, days):
     global df, granger_df
     df, granger_df = load_data()
-    df.to_csv("dont.csv")
-    granger_df.to_csv("dont1.csv")
-    forecast_result = forecast_percent_return(df, ticker=ticker, days=days)
+    model_path = get_artifact_path("gnn_model.pt")
+    forecast_result = forecast_percent_return(df, ticker=ticker, model_path=model_path, days=days)
     print("\n🔮 Forecast:", forecast_result)
 
 if __name__ == "__main__":
@@ -125,3 +124,4 @@ if __name__ == "__main__":
     parser.add_argument("--days", type=int, required=True, help="Number of days to forecast ahead")
     args = parser.parse_args()
     main(ticker=args.ticker, days=args.days)
+
