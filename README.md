@@ -55,8 +55,8 @@ causal analysis to understand key factors influencing stock market trends. The e
 - Advanced risk assessment for institutional and retail investors.
 
 ### HLD & Workflow
+![image](https://github.com/user-attachments/assets/8144cd95-2621-4626-8dcc-be055e83f912)
 
-![image](https://github.com/user-attachments/assets/7f632bf8-044f-43f9-9ad7-67471465b2f8)
 
 ## 🛠️ How We Built It
 
