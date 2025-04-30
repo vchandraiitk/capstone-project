@@ -154,7 +154,7 @@ Describe the major technical or non-technical challenges your team encountered.
 
 1. Clone the repository
    ```sh
-   https://github.com/vchandraiitk/iisc-capstone.git
+   https://github.com/vchandraiitk/capstone-project.git
    ```
 2. Install dependencies
    ```sh
