@@ -110,13 +110,5 @@ Industry (one-hot)
 
 All features influence in_channels, and their selection plays a major role in model performance.
 
-## ✅ Summary Table
-Hyperparameter	Category	Description	Tuning Tip
-out_channels=16	GAT	Embedding size per head	Try 8, 32
-heads=4	GAT	Number of attention heads	Try 2–8
-dropout=0.3	GAT	Prevents overfitting	Try 0.1–0.5
-lr=0.01	Optimizer	Learning rate	Try 0.001–0.02
-epochs=100	Training	Epochs for training	Use early stopping
-loss_fn=MSE	Loss	Penalizes squared errors	Try SmoothL1Loss
-n_samples=50	Forecasting	MC Dropout forward passes	Try 100 for stability
-horizons=[30,180,365]	Forecasting	Forecast days ahead	Add 60, 90 for mid-term
+<img width="664" alt="image" src="https://github.com/user-attachments/assets/a04e2eb4-0e42-4596-894b-153712218a54" />
+
