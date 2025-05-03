@@ -99,6 +99,44 @@ def get_artifact_path(file):
     os.makedirs(path, exist_ok=True)
     return os.path.join(path, file)
 
+def compute_rsi(series, period=14):
+    delta = series.diff()
+    gain = delta.where(delta > 0, 0.0)
+    loss = -delta.where(delta < 0, 0.0)
+    avg_gain = gain.rolling(window=period, min_periods=period).mean()
+    avg_loss = loss.rolling(window=period, min_periods=period).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def compute_macd(series, fast=12, slow=26, signal=9):
+    exp1 = series.ewm(span=fast, adjust=False).mean()
+    exp2 = series.ewm(span=slow, adjust=False).mean()
+    macd = exp1 - exp2
+    signal_line = macd.ewm(span=signal, adjust=False).mean()
+    return macd, signal_line
+
+def add_rsi_macd(df):
+    df = df.copy()
+    df = df.sort_values(['Ticker', 'Date'])
+
+    # Compute RSI
+    df['RSI'] = df.groupby('Ticker')['Close'].transform(compute_rsi)
+
+    # Compute MACD and Signal
+    macd_list = []
+    signal_list = []
+
+    for ticker, group in df.groupby('Ticker'):
+        macd, signal = compute_macd(group['Close'])
+        macd_list.extend(macd)
+        signal_list.extend(signal)
+
+    df['MACD'] = macd_list
+    df['MACD_Signal'] = signal_list
+
+    return df
+
 # ---------- DATA LOAD ----------
 def load_data():
     df = pd.read_csv(get_data_path(CSV_STOCK), parse_dates=['Date'])
@@ -113,7 +151,34 @@ def load_data():
     df['time_index_scaled'] = df.groupby('Ticker')['time_index'].transform(lambda x: (x - x.mean()) / x.std())
     df['Close_scaled_diff'] = df.groupby('Ticker')['Close_scaled'].diff()
     df = df.merge(industry_df, on='Ticker', how='left')
+    df = add_rsi_macd(df)
+    df['RSI_scaled'] = df.groupby('Ticker')['RSI'].transform(lambda x: (x - x.mean()) / x.std())
+    df['MACD_scaled'] = df.groupby('Ticker')['MACD'].transform(lambda x: (x - x.mean()) / x.std())
+    df['MACD_Signal_scaled'] = df.groupby('Ticker')['MACD_Signal'].transform(lambda x: (x - x.mean()) / x.std())
+
     return df, granger_df
+
+def plot_rsi_macd(df, ticker="RELIANCE"):
+    stock_df = df[df['Ticker'] == ticker].copy()
+    
+    plt.figure(figsize=(14, 4))
+    plt.plot(stock_df['Date'], stock_df['RSI'], label='RSI (14)', color='orange')
+    plt.axhline(70, color='red', linestyle='--', label='Overbought')
+    plt.axhline(30, color='green', linestyle='--', label='Oversold')
+    plt.title(f"{ticker} - RSI Indicator")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(14, 4))
+    plt.plot(stock_df['Date'], stock_df['MACD'], label='MACD', color='blue')
+    plt.plot(stock_df['Date'], stock_df['MACD_Signal'], label='Signal Line', color='red')
+    plt.title(f"{ticker} - MACD Indicator")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
 # ---------- GAT MODEL ----------
 class GAT(torch.nn.Module):
@@ -279,7 +344,7 @@ def build_graph(df, granger_df):
             f.replace('_stationary', '') + '_scaled'
             for f in granger_df[granger_df['Ticker'] == ticker]['Factor'].tolist()
             if f.replace('_stationary', '') + '_scaled' in df.columns
-        ] + ['time_index_scaled', 'Close_scaled_diff'] + list(industry_encoded_df.columns) for ticker in tickers
+        ] + ['time_index_scaled', 'Close_scaled_diff', 'RSI_scaled', 'MACD_scaled', 'MACD_Signal_scaled'] + list(industry_encoded_df.columns) for ticker in tickers
     }
 
     cross_sector_edges = {
@@ -289,6 +354,8 @@ def build_graph(df, granger_df):
         'Consumer': ['Retail'],
         # Expand more if needed
     }
+    with open('cross_sector_edges.json', 'r') as f:
+        cross_sector_edges = json.load(f)
 
     node_features, node_labels, ticker_index_map = [], [], {}
 
@@ -497,4 +564,6 @@ if __name__ == "__main__":
     plot_scaled_predictions(graph_data, pred)
     plot_unscaled_predictions(pred, graph_data, full_df, ticker_index_map)
     forecast_future_prices(model, full_df, granger_df, ticker_recommendations)
-
+    plot_rsi_macd(df, ticker="RELIANCE")
+    plot_rsi_macd(df, ticker="INFY")
+    plot_rsi_macd(df, ticker="ADANIENT")

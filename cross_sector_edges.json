@@ -1,0 +1,502 @@
+{
+    "2/3Wheelers": [
+        "Tyres&RubberProducts",
+        "PassengerCars&UtilityVehicles"
+    ],
+    "Abrasives&Bearings": [
+        "AutoComponents&Equipments",
+        "IndustrialProducts"
+    ],
+    "Aerospace&Defense": [
+        "CivilConstruction",
+        "HeavyElectricalEquipment"
+    ],
+    "Airline": [
+        "ResidentialCommercialProjects",
+        "Paper&PaperProducts"
+    ],
+    "Airport&Airportservices": [
+        "Port&Portservices",
+        "Breweries&Distilleries"
+    ],
+    "Aluminium": [
+        "Copper",
+        "DiversifiedMetals"
+    ],
+    "AnimalFeed": [
+        "AutoComponents&Equipments",
+        "Fertilizers"
+    ],
+    "AssetManagementCompany": [
+        "Houseware",
+        "HousingFinanceCompany"
+    ],
+    "AutoComponents&Equipments": [
+        "InvestmentCompany",
+        "ResidentialCommercialProjects"
+    ],
+    "Breweries&Distilleries": [
+        "SpongeIron",
+        "ResidentialCommercialProjects"
+    ],
+    "BusinessProcessOutsourcing(BPO)/KnowledgeProcessOutsourcing(KPO)": [
+        "Computers-Software&Consulting",
+        "Iron&SteelProducts"
+    ],
+    "Cables-Electricals": [
+        "ResidentialCommercialProjects",
+        "ConstructionVehicles"
+    ],
+    "CarbonBlack": [
+        "HousingFinanceCompany",
+        "BusinessProcessOutsourcing(BPO)/KnowledgeProcessOutsourcing(KPO)"
+    ],
+    "Castings&Forgings": [
+        "Pesticides&Agrochemicals",
+        "DiversifiedFMCG"
+    ],
+    "Cement&CementProducts": [
+        "OtherTelecomServices",
+        "Port&Portservices"
+    ],
+    "Ceramics": [
+        "Houseware",
+        "LogisticsSolutionProvider"
+    ],
+    "Cigarettes&TobaccoProducts": [
+        "Lubricants",
+        "Stationary"
+    ],
+    "CivilConstruction": [
+        "ConstructionVehicles",
+        "FinancialInstitution"
+    ],
+    "Coal": [
+        "OilExploration&Production",
+        "Telecom-Equipment&Accessories"
+    ],
+    "CommercialVehicles": [
+        "AutoComponents&Equipments",
+        "Iron&SteelProducts"
+    ],
+    "CommodityChemicals": [
+        "SpecialtyChemicals",
+        "NonBankingFinancialCompany(NBFC)"
+    ],
+    "CompressorsPumps&DieselEngines": [
+        "IndustrialProducts",
+        "AutoComponents&Equipments"
+    ],
+    "Computers-Software&Consulting": [
+        "BusinessProcessOutsourcing(BPO)/KnowledgeProcessOutsourcing(KPO)",
+        "Hospital"
+    ],
+    "ConstructionVehicles": [
+        "CivilConstruction",
+        "ResidentialCommercialProjects"
+    ],
+    "ConsumerElectronics": [
+        "PlasticProducts-Industrial",
+        "AutoComponents&Equipments"
+    ],
+    "Copper": [
+        "Aluminium",
+        "OtherTelecomServices"
+    ],
+    "DepositoriesClearingHousesandOtherIntermediaries": [
+        "Houseware",
+        "Hospital"
+    ],
+    "Diversified": [
+        "Houseware",
+        "Cement&CementProducts"
+    ],
+    "DiversifiedCommercialServices": [
+        "Stationary",
+        "Houseware"
+    ],
+    "DiversifiedFMCG": [
+        "PersonalCare",
+        "PackagedFoods"
+    ],
+    "DiversifiedMetals": [
+        "Aluminium",
+        "Houseware"
+    ],
+    "DiversifiedRetail": [
+        "Paints",
+        "PersonalCare"
+    ],
+    "E-Retail/E-Commerce": [
+        "Houseware",
+        "Stationary"
+    ],
+    "EdibleOil": [
+        "Houseware",
+        "Stationary"
+    ],
+    "Electrodes&Refractories": [
+        "SpecialtyChemicals",
+        "Iron&Steel"
+    ],
+    "ExchangeandDataPlatform": [
+        "Stockbroking&Allied",
+        "Computers-Software&Consulting"
+    ],
+    "Explosives": [
+        "PlasticProducts-Industrial",
+        "Cables-Electricals"
+    ],
+    "Fertilizers": [
+        "CommodityChemicals",
+        "CivilConstruction"
+    ],
+    "FilmProductionDistribution&Exhibition": [
+        "Hotels&Resorts",
+        "PlasticProducts-Consumer"
+    ],
+    "FinancialInstitution": [
+        "CivilConstruction",
+        "PublicSectorBank"
+    ],
+    "FinancialProductsDistributor": [
+        "ExchangeandDataPlatform",
+        "ConstructionVehicles"
+    ],
+    "FinancialTechnology(Fintech)": [
+        "HouseholdAppliances",
+        "Pharmaceuticals"
+    ],
+    "Footwear": [
+        "Garments&Apparels",
+        "PlasticProducts-Consumer"
+    ],
+    "Garments&Apparels": [
+        "Footwear",
+        "HouseholdAppliances"
+    ],
+    "GasTransmission/Marketing": [
+        "LPG/CNG/PNG/LNGSupplier",
+        "CivilConstruction"
+    ],
+    "GemsJewelleryAndWatches": [
+        "Houseware",
+        "AutoComponents&Equipments"
+    ],
+    "GeneralInsurance": [
+        "Houseware",
+        "OtherTelecomServices"
+    ],
+    "HealthcareResearchAnalytics&Technology": [
+        "Pharmaceuticals",
+        "Stationary"
+    ],
+    "HealthcareServiceProvider": [
+        "Stationary",
+        "Hospital"
+    ],
+    "HeavyElectricalEquipment": [
+        "AutoComponents&Equipments",
+        "InvestmentCompany"
+    ],
+    "HoldingCompany": [
+        "NonBankingFinancialCompany(NBFC)",
+        "InvestmentCompany"
+    ],
+    "Hospital": [
+        "Computers-Software&Consulting",
+        "ITEnabledServices"
+    ],
+    "Hotels&Resorts": [
+        "ResidentialCommercialProjects",
+        "PrivateSectorBank"
+    ],
+    "HouseholdAppliances": [
+        "Houseware",
+        "ResidentialCommercialProjects"
+    ],
+    "HouseholdProducts": [
+        "PersonalCare",
+        "CivilConstruction"
+    ],
+    "Houseware": [
+        "LogisticsSolutionProvider",
+        "E-Retail/E-Commerce"
+    ],
+    "HousingFinanceCompany": [
+        "PrivateSectorBank",
+        "NonBankingFinancialCompany(NBFC)"
+    ],
+    "ITEnabledServices": [
+        "Computers-Software&Consulting",
+        "AutoComponents&Equipments"
+    ],
+    "IndustrialGases": [
+        "NonBankingFinancialCompany(NBFC)",
+        "CommodityChemicals"
+    ],
+    "IndustrialMinerals": [
+        "Stationary",
+        "Aluminium"
+    ],
+    "IndustrialProducts": [
+        "CompressorsPumps&DieselEngines",
+        "AutoComponents&Equipments"
+    ],
+    "IntegratedPowerUtilities": [
+        "LPG/CNG/PNG/LNGSupplier",
+        "PowerGeneration"
+    ],
+    "Internet&CatalogueRetail": [
+        "Houseware",
+        "Stationary"
+    ],
+    "InvestmentCompany": [
+        "PrivateSectorBank",
+        "NonBankingFinancialCompany(NBFC)"
+    ],
+    "Iron&Steel": [
+        "Iron&SteelProducts",
+        "Aluminium"
+    ],
+    "Iron&SteelProducts": [
+        "Houseware",
+        "AutoComponents&Equipments"
+    ],
+    "LPG/CNG/PNG/LNGSupplier": [
+        "Houseware",
+        "CivilConstruction"
+    ],
+    "LifeInsurance": [
+        "HoldingCompany",
+        "HousingFinanceCompany"
+    ],
+    "LogisticsSolutionProvider": [
+        "Houseware",
+        "Ceramics"
+    ],
+    "Lubricants": [
+        "AnimalFeed",
+        "PrivateSectorBank"
+    ],
+    "Media&Entertainment": [
+        "Houseware",
+        "Telecom-Cellular&Fixedlineservices"
+    ],
+    "MedicalEquipment&Supplies": [
+        "OtherTelecomServices",
+        "CommodityChemicals"
+    ],
+    "MicrofinanceInstitutions": [
+        "Iron&SteelProducts",
+        "InvestmentCompany"
+    ],
+    "NonBankingFinancialCompany(NBFC)": [
+        "PrivateSectorBank",
+        "InvestmentCompany"
+    ],
+    "OilExploration&Production": [
+        "Coal",
+        "GasTransmission/Marketing"
+    ],
+    "OtherAgriculturalProducts": [
+        "Iron&SteelProducts",
+        "Fertilizers"
+    ],
+    "OtherBank": [
+        "PrivateSectorBank",
+        "NonBankingFinancialCompany(NBFC)"
+    ],
+    "OtherBeverages": [
+        "PrivateSectorBank",
+        "GasTransmission/Marketing"
+    ],
+    "OtherElectricalEquipment": [
+        "Houseware",
+        "OtherIndustrialProducts"
+    ],
+    "OtherFinancialServices": [
+        "Stockbroking&Allied",
+        "Computers-Software&Consulting"
+    ],
+    "OtherIndustrialProducts": [
+        "SanitaryWare",
+        "OtherTelecomServices"
+    ],
+    "OtherTelecomServices": [
+        "OtherIndustrialProducts",
+        "NonBankingFinancialCompany(NBFC)"
+    ],
+    "OtherTextileProducts": [
+        "OtherIndustrialProducts",
+        "Houseware"
+    ],
+    "PackagedFoods": [
+        "PersonalCare",
+        "DiversifiedFMCG"
+    ],
+    "Paints": [
+        "PersonalCare",
+        "DiversifiedFMCG"
+    ],
+    "Paper&PaperProducts": [
+        "Houseware",
+        "ResidentialCommercialProjects"
+    ],
+    "PassengerCars&UtilityVehicles": [
+        "HeavyElectricalEquipment",
+        "AutoComponents&Equipments"
+    ],
+    "PersonalCare": [
+        "Paints",
+        "AutoComponents&Equipments"
+    ],
+    "Pesticides&Agrochemicals": [
+        "SpecialtyChemicals",
+        "CommodityChemicals"
+    ],
+    "Pharmaceuticals": [
+        "Houseware",
+        "SpecialtyChemicals"
+    ],
+    "PlasticProducts-Consumer": [
+        "NonBankingFinancialCompany(NBFC)",
+        "FilmProductionDistribution&Exhibition"
+    ],
+    "PlasticProducts-Industrial": [
+        "AutoComponents&Equipments",
+        "InvestmentCompany"
+    ],
+    "PlywoodBoards/Laminates": [
+        "HousingFinanceCompany",
+        "NonBankingFinancialCompany(NBFC)"
+    ],
+    "Port&Portservices": [
+        "InvestmentCompany",
+        "CivilConstruction"
+    ],
+    "Power-Transmission": [
+        "Houseware",
+        "Stationary"
+    ],
+    "PowerDistribution": [
+        "PowerGeneration",
+        "Trading-Minerals"
+    ],
+    "PowerGeneration": [
+        "CivilConstruction",
+        "FinancialInstitution"
+    ],
+    "PrivateSectorBank": [
+        "NonBankingFinancialCompany(NBFC)",
+        "InvestmentCompany"
+    ],
+    "PublicSectorBank": [
+        "PrivateSectorBank",
+        "FinancialInstitution"
+    ],
+    "RailwayWagons": [
+        "AutoComponents&Equipments",
+        "CivilConstruction"
+    ],
+    "Refineries&Marketing": [
+        "CivilConstruction",
+        "Port&Portservices"
+    ],
+    "ResidentialCommercialProjects": [
+        "AutoComponents&Equipments",
+        "CivilConstruction"
+    ],
+    "Restaurants": [
+        "Breweries&Distilleries",
+        "Cement&CementProducts"
+    ],
+    "SanitaryWare": [
+        "OtherIndustrialProducts",
+        "Houseware"
+    ],
+    "ShipBuilding&AlliedServices": [
+        "Aerospace&Defense",
+        "Zinc"
+    ],
+    "Shipping": [
+        "Stationary",
+        "Port&Portservices"
+    ],
+    "SoftwareProducts": [
+        "Houseware",
+        "AutoComponents&Equipments"
+    ],
+    "SpecialityRetail": [
+        "Houseware",
+        "Stationary"
+    ],
+    "SpecialtyChemicals": [
+        "CommodityChemicals",
+        "Pesticides&Agrochemicals"
+    ],
+    "SpongeIron": [
+        "Breweries&Distilleries",
+        "DiversifiedMetals"
+    ],
+    "Stationary": [
+        "Telecom-Infrastructure",
+        "IndustrialMinerals"
+    ],
+    "Stockbroking&Allied": [
+        "HoldingCompany",
+        "TourTravelRelatedServices"
+    ],
+    "Sugar": [
+        "Houseware",
+        "Iron&SteelProducts"
+    ],
+    "TVBroadcasting&SoftwareProduction": [
+        "AutoComponents&Equipments",
+        "ResidentialCommercialProjects"
+    ],
+    "Tea&Coffee": [
+        "SpecialtyChemicals",
+        "Iron&SteelProducts"
+    ],
+    "Telecom-Cellular&Fixedlineservices": [
+        "Media&Entertainment",
+        "Telecom-Infrastructure"
+    ],
+    "Telecom-Equipment&Accessories": [
+        "Houseware",
+        "Telecom-Infrastructure"
+    ],
+    "Telecom-Infrastructure": [
+        "Stationary",
+        "Houseware"
+    ],
+    "TourTravelRelatedServices": [
+        "Stockbroking&Allied",
+        "Houseware"
+    ],
+    "Tractors": [
+        "PlasticProducts-Industrial",
+        "Airport&Airportservices"
+    ],
+    "Trading&Distributors": [
+        "PublicSectorBank",
+        "Houseware"
+    ],
+    "Trading-Gas": [
+        "Houseware",
+        "CompressorsPumps&DieselEngines"
+    ],
+    "Trading-Minerals": [
+        "IntegratedPowerUtilities",
+        "PowerDistribution"
+    ],
+    "Tyres&RubberProducts": [
+        "AutoComponents&Equipments",
+        "CivilConstruction"
+    ],
+    "Zinc": [
+        "DiversifiedMetals",
+        "ShipBuilding&AlliedServices"
+    ]
+}
