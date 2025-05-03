@@ -55,8 +55,8 @@ causal analysis to understand key factors influencing stock market trends. The e
 - Advanced risk assessment for institutional and retail investors.
 
 ### HLD & Workflow
-![image](https://github.com/user-attachments/assets/8144cd95-2621-4626-8dcc-be055e83f912)
 
+![image](https://github.com/user-attachments/assets/8144cd95-2621-4626-8dcc-be055e83f912)
 
 ## 🛠️ How We Built It
 
@@ -146,6 +146,91 @@ Hence LSTM is not a good fit for stock target prediction.
 
 </details>
 
+### GNN - Graph Neural Network
+
+<details>
+   <summary>🔍 Click to see details.</summary>
+
+GNNs use a neural network architecture to learn from the graph structure and the attributes associated with nodes and
+edges.
+They can then use this learned knowledge to make predictions or draw conclusions. Graph transformers represent a
+significant
+advancement in the realm of machine learning, particularly for graph-structured data. They combine the strengths of
+traditional
+Graph Neural Networks (GNNs) with the powerful attention mechanisms of transformers, leading to enhanced performance
+across
+various tasks.
+
+#### Core Concepts of Graph Transformers
+
+Graph transformers utilize a message-passing framework similar to GNNs but incorporate self-attention mechanisms to
+weigh the
+importance of different nodes during the aggregation process. This allows for a more nuanced understanding of the
+relationships
+within the graph. The architecture typically consists of:
+
+* **Input Layer**: Where node features are fed into the model.
+* **Attention Mechanism**: This layer computes attention scores to determine the significance of neighboring nodes.
+* **Aggregation Layer**: Node features are updated based on the weighted contributions from their neighbors.
+* **Output Layer**: Produces the final predictions or embeddings.
+
+#### GNN Transformer Convolutions
+
+Transformer convolutions combine the local feature extraction capabilities of Convolutional Neural Networks (CNNs) with
+the
+global context understanding of Transformers. This hybrid approach aims to enhance performance.
+
+**Key Features**
+
+* **Local and Global Feature Extraction**: By utilizing convolutions, the model can capture local patterns while the
+  Transformer
+  layers provide a broader context.
+* **Dynamic Attention Mechanisms**: Transformers introduce attention mechanisms that allow the model to focus on
+  relevant
+  parts of the input, improving interpretability and performance.
+* **Scalability**: The architecture can be scaled up or down depending on the task, making it versatile for different
+  applications.
+
+##### Implementation Details
+
+Here are the step by step details how we arrived at model implementations
+
+1. Took the time series data of Stocks and Macro factors
+2. Cleansed the data, performed EDA
+3. To get all data onto same time interval, forward filled data to make it align with daily data of stocks
+4. Macro factors and other economic indicators are forward filled to daily data
+5. Merged Stock data with the Macro factors data based on Date
+6. Checked if the data is stationary using ADF-Test with respect to the target which is closing price of the stock
+7. Differencing to detrend the time series and make it stationary
+8. Checked if macro factors are stationary and made it stationary
+9. Ran Granger Causal Analysis to fetch causal inference between the Stocks and Macro factors and cross-sectoral
+   dependencies
+10. Constructed graph with the causal factors with Stocks and Macro factors as the nodes with edges representing
+    cause-effect relationship between them
+11. Normalized the data for macro factors
+12. Converted graph data into tensors
+13. Constructed Graph Transformer Convolutions with input parameters with causal factors and economic factors.
+14. Used Relu activation function to negate the gradient descent problem. Also used Adam optimizer to tune the model
+    parameters
+15. Used model in eval mode to forecast the stock value.
+
+Here is the model summary of our Graph Convolution Transformer
+
+```plain
++--------------------------+-----------------------+----------------+----------+
+| Layer                    | Input Shape           | Output Shape   | #Param   |
+|--------------------------+-----------------------+----------------+----------|
+| GNNTransformer           | [24227, 8], [2, 337]  | [24227, 1]     | 1,284    |
+| ├─(conv1)TransformerConv | [24227, 8], [2, 337]  | [24227, 32]    | 1,152    |
+| ├─(conv2)TransformerConv | [24227, 32], [2, 337] | [24227, 1]     | 132      |
++--------------------------+-----------------------+----------------+----------+
+
+```
+
+Example Causal DAG for RELIANCE stock
+![img.png](img.png)
+
+</details>
 ## 🚧 Challenges We Faced
 
 Describe the major technical or non-technical challenges your team encountered.
@@ -154,7 +239,7 @@ Describe the major technical or non-technical challenges your team encountered.
 
 1. Clone the repository
    ```sh
-   https://github.com/vchandraiitk/capstone-project.git
+   https://github.com/vchandraiitk/iisc-capstone.git
    ```
 2. Install dependencies
    ```sh
@@ -182,4 +267,3 @@ Describe the major technical or non-technical challenges your team encountered.
   ** - [GitHub](https://github.com/richa1543) | [LinkedIn](https://www.linkedin.com/in/richa-parikh-824a1b124/)
 
 <img width="697" alt="image" src="https://github.com/user-attachments/assets/09307f59-6cb1-46ae-b237-e5e3c87fa078" />
-
