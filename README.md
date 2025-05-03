@@ -282,6 +282,7 @@ candidate option for modelling
 
 
 </details>
+
 ## 🚧 Challenges We Faced
 
 Describe the major technical or non-technical challenges your team encountered.
