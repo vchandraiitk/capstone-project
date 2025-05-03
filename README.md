@@ -59,7 +59,7 @@ causal analysis to understand key factors influencing stock market trends. The e
 
 ## 🛠️ How We Built It
 
-<img width="926" alt="image" src="https://github.com/user-attachments/assets/0dbaefaa-34ec-4b55-bf76-0fd474b2a63c" />
+<img width="526" alt="image" src="https://github.com/user-attachments/assets/0dbaefaa-34ec-4b55-bf76-0fd474b2a63c" />
 
 ## Model Details
 
