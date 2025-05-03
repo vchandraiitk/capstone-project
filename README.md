@@ -17,8 +17,7 @@
 
 ## 🎯 Introduction
 
-A brief overview of your project and its purpose. Mention which problem statement are your attempting to solve. Keep it
-concise and engaging.
+Stock price prediction is challenging due to market volatility, high-dimensional data, and the influence of external factors such as economic indicators, interest rates, and news sentiment. Traditional time series models capture historical trends but often fail to explain causal relationships. This research integrates Time Series Analysis with Causal Analysis to improve prediction accuracy and interpretability by identifying key drivers of stock prices beyond historical patterns. The approach aims to enhance financial decision-making in trading, portfolio management and risk assessment.
 
 ## 🎥 Demo
 
@@ -60,7 +59,7 @@ causal analysis to understand key factors influencing stock market trends. The e
 
 ## 🛠️ How We Built It
 
-Briefly outline the technologies, frameworks, and tools used in development.
+<img width="926" alt="image" src="https://github.com/user-attachments/assets/0dbaefaa-34ec-4b55-bf76-0fd474b2a63c" />
 
 ## Model Details
 
