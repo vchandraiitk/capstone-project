@@ -24,9 +24,9 @@ concise and engaging.
 
 🔗 [Live Demo](#) (if applicable)  
 📹 [Video Demo](#) (if applicable)  
-🖼️ Screenshots:
+<img width="1214" alt="image" src="https://github.com/user-attachments/assets/d56d58f4-0af3-466a-b977-fd37b4912788" />
+<img width="1214" alt="image" src="https://github.com/user-attachments/assets/0e87651e-6dc3-443c-ab8e-ed09753936c7" />
 
-![Screenshot 1](link-to-image)
 
 ## 💡 Inspiration
 
