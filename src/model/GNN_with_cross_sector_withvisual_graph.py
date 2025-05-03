@@ -1,5 +1,66 @@
 # Vertex AI Workbench-compatible GAT-based Stock Forecasting
 
+# ------------------------------------------
+# GAT-Based Stock Forecasting - Technical Documentation
+# ------------------------------------------
+
+"""
+This script builds a stock forecasting pipeline using a Graph Attention Network (GAT) model. It combines historical price data, Granger-causal factors, and industry relationships to build a graph of interrelated stocks. The model predicts the scaled future closing price and estimates prediction confidence using Monte Carlo Dropout.
+
+Key Components:
+---------------
+1. Data Preprocessing
+2. Graph Construction (with Granger and Industry edges)
+3. GAT Model Definition
+4. Training & Evaluation
+5. Forecasting (with Confidence Estimation)
+6. Visualization (plots + network graph)
+
+Hyperparameters and Their Roles:
+--------------------------------
+- GATConv:
+  - `in_channels`: Number of input features for each node.
+  - `out_channels` = 16: Dimensionality of output embedding per attention head.
+  - `heads` = 4: Number of attention heads (multi-head attention).
+  - `dropout` = 0.3: Dropout rate applied during attention computation (prevents overfitting).
+
+- Linear Layer:
+  - Maps concatenated multi-head outputs (16 * 4) to 1-dimensional output (forecasted price).
+
+- Optimizer:
+  - `Adam`: Adaptive optimizer with momentum.
+  - `lr` = 0.01: Learning rate — controls the size of each parameter update.
+
+- Training:
+  - `epochs` = 100: Number of passes through the entire graph.
+  - `loss_fn` = MSE: Regression loss used to match predicted and actual scaled prices.
+
+- Forecasting:
+  - `n_samples` = 50: Number of forward passes using dropout to estimate prediction distribution.
+  - `horizons` = [30, 180, 365]: Forecast intervals in days.
+
+Files:
+------
+- `stock_data_final_transformed.csv`: Contains stock time-series and technical indicators.
+- `granger_all_tickers.csv`: Granger causal relationship mappings.
+- `Ticker-Industry.csv`: Industry classification of each ticker.
+- `cross_sector_edges.json`: Optional file to define inter-industry influence.
+
+Output:
+-------
+- Predicted stock prices (scaled and unscaled)
+- Confidence % (based on prediction variance)
+- PNG/SVG plots for visualization
+- Interactive HTML network graph (using pyvis)
+- CSV of all forecasts (`gnn_forecast_confidence_final.csv`)
+
+Potential Enhancements:
+-----------------------
+- Add validation set for early stopping
+- Incorporate sentiment or macroeconomic features
+- Tune GAT hyperparameters using Optuna
+- Add support for edge weights (e.g., Granger strength or industry similarity)
+"""
 import os
 import pandas as pd
 import numpy as np
