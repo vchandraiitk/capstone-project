@@ -17,7 +17,12 @@
 
 ## 🎯 Introduction
 
-Stock price prediction is challenging due to market volatility, high-dimensional data, and the influence of external factors such as economic indicators, interest rates, and news sentiment. Traditional time series models capture historical trends but often fail to explain causal relationships. This research integrates Time Series Analysis with Causal Analysis to improve prediction accuracy and interpretability by identifying key drivers of stock prices beyond historical patterns. The approach aims to enhance financial decision-making in trading, portfolio management and risk assessment.
+Stock price prediction is challenging due to market volatility, high-dimensional data, and the influence of external
+factors such as economic indicators, interest rates, and news sentiment. Traditional time series models capture
+historical trends but often fail to explain causal relationships. This research integrates Time Series Analysis with
+Causal Analysis to improve prediction accuracy and interpretability by identifying key drivers of stock prices beyond
+historical patterns. The approach aims to enhance financial decision-making in trading, portfolio management and risk
+assessment.
 
 ## 🎥 Demo
 
@@ -25,7 +30,6 @@ Stock price prediction is challenging due to market volatility, high-dimensional
 📹 [Video Demo](#) (if applicable)  
 <img width="1214" alt="image" src="https://github.com/user-attachments/assets/d56d58f4-0af3-466a-b977-fd37b4912788" />
 <img width="1214" alt="image" src="https://github.com/user-attachments/assets/0e87651e-6dc3-443c-ab8e-ed09753936c7" />
-
 
 ## 💡 Inspiration
 
@@ -228,6 +232,54 @@ Here is the model summary of our Graph Convolution Transformer
 
 Example Causal DAG for RELIANCE stock
 ![img.png](img.png)
+
+</details>
+
+### GCN - Graph Convolution Network
+
+<details>
+    <summary>🔍 Click to see details.</summary>
+GCNConv is PyTorch Geometric's implementation of the Graph Convolutional Network (GCN) layer introduced by Kipf & Welling (2017). It is one of the most widely used and foundational GNN layers for learning on graph-structured data.
+
+At its core, GCNConv performs message passing by aggregating feature information from a node’s neighbors using a
+mean-based aggregation scheme with symmetric normalization of the adjacency matrix. The output is then passed through a
+linear transformation to produce new node embeddings.
+
+#### 🔄 GCNConv vs. TransformerConv – Key Differences
+
+| Feature                  | GCNConv                                       | TransformerConv                                    |
+|--------------------------|-----------------------------------------------|----------------------------------------------------|
+| **Aggregation**          | Fixed mean (with adjacency normalization)     | Learnable attention-based (multi-head)             |
+| **Attention**            | ❌ No                                          | ✅ Yes                                              |
+| **Edge Features**        | ❌ Not supported                               | ✅ Supported (as attention bias)                    |
+| **Positional Awareness** | ❌ No                                          | ✅ Can include via edge attributes                  |
+| **Multi-head Support**   | ❌ No                                          | ✅ Yes                                              |
+| **Computation Cost**     | Low                                           | High                                               |
+| **Expressive Power**     | Moderate (limited depth & structure modeling) | High (global, contextual, and structure-aware)     |
+| **Use Case**             | Simple, homophilic graphs                     | Complex or heterophilic graphs with rich structure |
+
+#### GCN vs GNN Transformer Hyperparameter comparison
+
+| Hyper Parameter               | GCN                      | GNN                        |
+|-------------------------------|--------------------------|----------------------------|
+| Number of layers              | 2                        | 2                          |
+| Hidden layer size             | 16                       | 16                         |
+| Learning rate                 | 0.01                     | 0.01                       |
+| Dropout rate                  | 0.1                      | 0.1                        |
+| Weight decay                  |                          |                            |
+| Batch size                    |                          |                            |
+| Number of training epochs     | 100                      | 100                        |
+| Aggregation function          | Mean                     | Mean, Max, LSTM, Attention |
+| Activation function           | ReLU                     | Relu                       |
+| Optimizer                     | Adam                     | Adam                       |
+| Normalization                 | Symmetric adjacency norm | BatchNorm                  |
+| Attention heads               | N/A                      | 4–8                        |
+| Neighborhood sampling size    | N/A                      |                            |
+| Positional encoding dimension | N/A                      | 16                         |
+
+The R2 metric and loss from GCN is found to be way higher than the TransformerConv model. Hence this is not chosen as
+candidate option for modelling
+
 
 </details>
 ## 🚧 Challenges We Faced
