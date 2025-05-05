@@ -1,0 +1,626 @@
+# Vertex AI Workbench-compatible GAT-based Stock Forecasting
+
+# ------------------------------------------
+# GAT-Based Stock Forecasting - Technical Documentation
+# ------------------------------------------
+
+"""
+This script builds a stock forecasting pipeline using a Graph Attention Network (GAT) model. It combines historical price data, Granger-causal factors, and industry relationships to build a graph of interrelated stocks. The model predicts the scaled future closing price and estimates prediction confidence using Monte Carlo Dropout.
+
+Key Components:
+---------------
+1. Data Preprocessing
+2. Graph Construction (with Granger and Industry edges)
+3. GAT Model Definition
+4. Training & Evaluation
+5. Forecasting (with Confidence Estimation)
+6. Visualization (plots + network graph)
+
+Hyperparameters and Their Roles:
+--------------------------------
+- GATConv:
+  - `in_channels`: Number of input features for each node.
+  - `out_channels` = 16: Dimensionality of output embedding per attention head.
+  - `heads` = 4: Number of attention heads (multi-head attention).
+  - `dropout` = 0.3: Dropout rate applied during attention computation (prevents overfitting).
+
+- Linear Layer:
+  - Maps concatenated multi-head outputs (16 * 4) to 1-dimensional output (forecasted price).
+
+- Optimizer:
+  - `Adam`: Adaptive optimizer with momentum.
+  - `lr` = 0.01: Learning rate — controls the size of each parameter update.
+
+- Training:
+  - `epochs` = 100: Number of passes through the entire graph.
+  - `loss_fn` = MSE: Regression loss used to match predicted and actual scaled prices.
+
+- Forecasting:
+  - `n_samples` = 50: Number of forward passes using dropout to estimate prediction distribution.
+  - `horizons` = [30, 180, 365]: Forecast intervals in days.
+
+Files:
+------
+- `stock_data_final_transformed.csv`: Contains stock time-series and technical indicators.
+- `granger_all_tickers.csv`: Granger causal relationship mappings.
+- `Ticker-Industry.csv`: Industry classification of each ticker.
+- `cross_sector_edges.json`: Optional file to define inter-industry influence.
+
+Output:
+-------
+- Predicted stock prices (scaled and unscaled)
+- Confidence % (based on prediction variance)
+- PNG/SVG plots for visualization
+- Interactive HTML network graph (using pyvis)
+- CSV of all forecasts (`gnn_forecast_confidence_final.csv`)
+
+Potential Enhancements:
+-----------------------
+- Add validation set for early stopping
+- Incorporate sentiment or macroeconomic features
+- Tune GAT hyperparameters using Optuna
+- Add support for edge weights (e.g., Granger strength or industry similarity)
+"""
+import os
+import pandas as pd
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+from torch_geometric.data import Data
+from torch_geometric.nn import GATConv
+from torch.nn import Linear
+import torch.nn.functional as F
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from sklearn.preprocessing import OneHotEncoder
+import json
+import networkx as nx
+import math
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
+import math
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
+from torch.utils.data import Dataset, DataLoader
+# ---------- CONFIG ----------
+DATA_FOLDER = "data/staging"
+INDUSTRY_FOLDER = "data/industry"
+CSV_STOCK = "stock_data_final_transformed.csv"
+CSV_GRANGER = "granger_all_tickers.csv"
+CSV_INDUSTRY = "Ticker-Industry.csv"
+ARTIFACT_FOLDER = "artifacts_transformer"
+PLOT_FILE = "gnn_vs_actual_prices_hd.png"
+
+# ---------- PATH UTILS ----------
+def get_project_root():
+    return os.getcwd()
+
+def get_data_path(file):
+    return os.path.join(get_project_root(), DATA_FOLDER, file)
+
+def get_industry_path(file):
+    return os.path.join(get_project_root(), INDUSTRY_FOLDER, file)
+
+def get_artifact_path(file):
+    path = os.path.join(get_project_root(), ARTIFACT_FOLDER)
+    os.makedirs(path, exist_ok=True)
+    return os.path.join(path, file)
+
+def compute_rsi(series, period=14):
+    delta = series.diff()
+    gain = delta.where(delta > 0, 0.0)
+    loss = -delta.where(delta < 0, 0.0)
+    avg_gain = gain.rolling(window=period, min_periods=period).mean()
+    avg_loss = loss.rolling(window=period, min_periods=period).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def compute_macd(series, fast=12, slow=26, signal=9):
+    exp1 = series.ewm(span=fast, adjust=False).mean()
+    exp2 = series.ewm(span=slow, adjust=False).mean()
+    macd = exp1 - exp2
+    signal_line = macd.ewm(span=signal, adjust=False).mean()
+    return macd, signal_line
+
+def add_rsi_macd(df):
+    df = df.copy()
+    df = df.sort_values(['Ticker', 'Date'])
+
+    # Compute RSI
+    df['RSI'] = df.groupby('Ticker')['Close'].transform(compute_rsi)
+
+    # Compute MACD and Signal
+    macd_list = []
+    signal_list = []
+
+    for ticker, group in df.groupby('Ticker'):
+        macd, signal = compute_macd(group['Close'])
+        macd_list.extend(macd)
+        signal_list.extend(signal)
+
+    df['MACD'] = macd_list
+    df['MACD_Signal'] = signal_list
+
+    return df
+
+# ---------- DATA LOAD ----------
+def load_data():
+    df = pd.read_csv(get_data_path(CSV_STOCK), parse_dates=['Date'])
+    granger_df = pd.read_csv(get_data_path(CSV_GRANGER))
+    industry_df = pd.read_csv(get_industry_path(CSV_INDUSTRY))
+
+    df = df.sort_values(['Ticker', 'Date'])
+    df['row'] = df.groupby('Ticker').cumcount()
+    df = df[df['row'] >= 30].drop(columns='row')
+    df['Close_scaled'] = df.groupby('Ticker')['Close'].transform(lambda x: (x - x.mean()) / x.std())
+    df['time_index'] = df.groupby('Ticker').cumcount()
+    df['time_index_scaled'] = df.groupby('Ticker')['time_index'].transform(lambda x: (x - x.mean()) / x.std())
+    df['Close_scaled_diff'] = df.groupby('Ticker')['Close_scaled'].diff()
+    df = df.merge(industry_df, on='Ticker', how='left')
+    df = add_rsi_macd(df)
+    df['RSI_scaled'] = df.groupby('Ticker')['RSI'].transform(lambda x: (x - x.mean()) / x.std())
+    df['MACD_scaled'] = df.groupby('Ticker')['MACD'].transform(lambda x: (x - x.mean()) / x.std())
+    df['MACD_Signal_scaled'] = df.groupby('Ticker')['MACD_Signal'].transform(lambda x: (x - x.mean()) / x.std())
+
+    return df, granger_df
+
+def plot_rsi_macd(df, ticker="RELIANCE"):
+    stock_df = df[df['Ticker'] == ticker].copy()
+    
+    plt.figure(figsize=(14, 4))
+    plt.plot(stock_df['Date'], stock_df['RSI'], label='RSI (14)', color='orange')
+    plt.axhline(70, color='red', linestyle='--', label='Overbought')
+    plt.axhline(30, color='green', linestyle='--', label='Oversold')
+    plt.title(f"{ticker} - RSI Indicator")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(14, 4))
+    plt.plot(stock_df['Date'], stock_df['MACD'], label='MACD', color='blue')
+    plt.plot(stock_df['Date'], stock_df['MACD_Signal'], label='Signal Line', color='red')
+    plt.title(f"{ticker} - MACD Indicator")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+# ---------- GAT MODEL ----------
+# ---------- HYBRID MODEL ----------
+class PositionalEncoding(torch.nn.Module):
+    def __init__(self, d_model, dropout=0.1, max_len=5000):
+        super().__init__()
+        self.dropout = torch.nn.Dropout(p=dropout)
+        position = torch.arange(max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        pe = torch.zeros(max_len, d_model)
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        x = x + self.pe[:x.size(0)]
+        return self.dropout(x)
+
+class HybridGATTransformer(torch.nn.Module):
+    def __init__(self, in_channels, nhead=4, num_encoder_layers=2, dim_feedforward=128):
+        super().__init__()
+        # GAT component
+        self.gat1 = GATConv(in_channels, 16, heads=4, dropout=0.3)
+        
+        # Transformer component
+        self.pos_encoder = PositionalEncoding(16 * 4)
+        encoder_layers = TransformerEncoderLayer(16 * 4, nhead, dim_feedforward, dropout=0.3)
+        self.transformer_encoder = TransformerEncoder(encoder_layers, num_encoder_layers)
+        
+        # Output layers
+        self.linear1 = Linear(16 * 4, 32)
+        self.linear2 = Linear(32, 1)
+        
+        # Initialize weights
+        self.init_weights()
+
+    def init_weights(self):
+        initrange = 0.1
+        self.linear1.weight.data.uniform_(-initrange, initrange)
+        self.linear1.bias.data.zero_()
+        self.linear2.weight.data.uniform_(-initrange, initrange)
+        self.linear2.bias.data.zero_()
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        
+        # GAT processing
+        x_gat = self.gat1(x, edge_index)
+        x_gat = F.elu(x_gat)
+        
+        # Transformer processing
+        x_trans = x_gat.unsqueeze(1)  # Add sequence dimension
+        x_trans = self.pos_encoder(x_trans)
+        x_trans = self.transformer_encoder(x_trans)
+        x_trans = x_trans.squeeze(1)
+        
+        # Combine features
+        x_combined = x_gat + x_trans  # Residual connection
+        
+        # Output layers
+        x_out = self.linear1(x_combined)
+        x_out = F.relu(x_out)
+        return self.linear2(x_out).squeeze()
+
+# [Previous train_gcn function is replaced with this new version]
+def train_gcn(graph_data, epochs=100):
+    model = HybridGATTransformer(graph_data.num_node_features)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    loss_fn = torch.nn.MSELoss()
+
+    for epoch in range(epochs):
+        model.train()
+        optimizer.zero_grad()
+        out = model(graph_data)
+        loss = loss_fn(out, graph_data.y)
+        loss.backward()
+        optimizer.step()
+        if epoch % 20 == 0:
+            print(f"Epoch {epoch} | Loss: {loss.item():.4f}")
+
+    return model
+
+# [All other functions remain exactly the same...]
+def evaluate(model, graph_data):
+    model.eval()
+    with torch.no_grad():
+        pred = model(graph_data)
+        y_true, y_pred = graph_data.y.numpy(), pred.numpy()
+        r2 = r2_score(y_true, y_pred)
+        mse = mean_squared_error(y_true, y_pred)
+        rmse = np.sqrt(mse)
+        mae = mean_absolute_error(y_true, y_pred)
+        print(f"\n📈 GNN Forecast Results:\nRMSE: {rmse:.4f} | MAE: {mae:.4f} | R²: {r2:.4f}")
+    return pred
+
+def plot_scaled_predictions(graph_data, pred):
+    plt.figure(figsize=(10, 4))
+    plt.plot(graph_data.y.numpy(), label='Actual', color='black')
+    plt.plot(pred.numpy(), label='Predicted', color='green')
+    plt.title("GNN Prediction - Close_scaled")
+    plt.legend()
+    plt.show()
+
+def plot_unscaled_predictions(pred, graph_data, df, ticker_index_map):
+    tickers_used = list(ticker_index_map.keys())
+    unscaled_preds, unscaled_actuals = [], []
+    for idx, ticker in enumerate(tickers_used):
+        mean = df[df['Ticker'] == ticker]['Close'].mean()
+        std = df[df['Ticker'] == ticker]['Close'].std()
+        unscaled_preds.append(pred[idx].item() * std + mean)
+        unscaled_actuals.append(graph_data.y[idx].item() * std + mean)
+
+    fig, ax = plt.subplots(figsize=(min(50, max(12, len(tickers_used) * 0.8)), max(8, len(tickers_used) * 0.1)))
+    ax.plot(unscaled_actuals, label="Actual ₹", marker='o', color='black')
+    ax.plot(unscaled_preds, label="Predicted ₹", marker='x', color='green')
+    ax.set_title("Unscaled GNN Predictions vs Actual Stock Prices")
+    ax.set_xlabel("Ticker")
+    ax.set_ylabel("Close Price (₹)")
+    ax.set_xticks(range(len(tickers_used)))
+    ax.set_xticklabels(tickers_used, rotation=90)
+    ax.legend()
+    ax.grid(True)
+    plt.tight_layout()
+    png_path = get_artifact_path("gnn_vs_actual_prices_hd.png")
+    svg_path = get_artifact_path("gnn_vs_actual_prices_hd.svg")
+    plt.savefig(png_path, dpi=200, bbox_inches='tight')
+    plt.savefig(svg_path, format='svg', bbox_inches='tight')
+    print(f"✅ PNG saved to: {png_path}")
+    print(f"✅ SVG saved to: {svg_path}")
+
+def build_graph_temp(df, granger_df):
+    tickers = granger_df['Ticker'].unique()
+    df = df[df['Ticker'].isin(tickers)]
+    granger_df = granger_df[granger_df['Ticker'].isin(tickers)]
+
+    encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    industry_encoded = encoder.fit_transform(df[['Industry']].fillna('Unknown'))
+    industry_encoded_df = pd.DataFrame(industry_encoded, columns=encoder.get_feature_names_out(['Industry']))
+    df = pd.concat([df.reset_index(drop=True), industry_encoded_df], axis=1)
+
+    ticker_features_map = {
+        ticker: [
+            f.replace('_stationary', '') + '_scaled'
+            for f in granger_df[granger_df['Ticker'] == ticker]['Factor'].tolist()
+            if f.replace('_stationary', '') + '_scaled' in df.columns
+        ] + ['time_index_scaled', 'Close_scaled_diff'] + list(industry_encoded_df.columns) for ticker in tickers
+    }
+
+    ticker_industry_map = df.drop_duplicates('Ticker').set_index('Ticker')['Industry'].to_dict()
+
+    all_features = sorted(set(f for feats in ticker_features_map.values() for f in feats))
+    node_features, node_labels, ticker_index_map = [], [], {}
+
+    for ticker in tickers:
+        sub_df = df[df['Ticker'] == ticker].dropna()
+        if sub_df.empty:
+            continue
+        last_row = sub_df.iloc[-1]
+        feat_vals = [last_row.get(f, 0.0) for f in all_features]
+        if pd.isna(last_row['Close_scaled']):
+            continue
+        x = torch.tensor(feat_vals, dtype=torch.float)
+        y = torch.tensor([last_row['Close_scaled']], dtype=torch.float)
+        ticker_index_map[ticker] = len(node_features)
+        node_features.append(x)
+        node_labels.append(y)
+
+    valid_tickers = list(ticker_index_map.keys())
+
+    # cross_sector_edges = {
+    #     'Banking': ['IT', 'Energy'],
+    #     'Energy': ['Manufacturing', 'Industrials'],
+    #     'IT': ['Consumer'],
+    #     'Consumer': ['Retail'],
+    #     # You can expand more...
+    # }
+    
+    with open('cross_sector_edges.json', 'r') as f:
+        cross_sector_edges = json.load(f)
+    edges = []
+    for t1 in valid_tickers:
+        for t2 in valid_tickers:
+            if t1 == t2:
+                continue
+            # Granger feature overlap
+            granger_overlap = set(ticker_features_map[t1]) & set(ticker_features_map[t2])
+            # Industry cross-sector logic
+            industry_t1 = ticker_industry_map.get(t1, 'Unknown')
+            industry_t2 = ticker_industry_map.get(t2, 'Unknown')
+            industry_relation = industry_t2 in cross_sector_edges.get(industry_t1, [])
+
+            if granger_overlap or industry_relation:
+                edges.append([ticker_index_map[t1], ticker_index_map[t2]])
+
+    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous() if edges else torch.empty((2, 0), dtype=torch.long)
+
+    graph_data = Data(x=torch.stack(node_features), edge_index=edge_index, y=torch.stack(node_labels).squeeze())
+
+    return graph_data, ticker_index_map, df
+
+def build_graph(df, granger_df):
+    tickers = granger_df['Ticker'].unique()
+    df = df[df['Ticker'].isin(tickers)]
+    granger_df = granger_df[granger_df['Ticker'].isin(tickers)]
+
+    encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    industry_encoded = encoder.fit_transform(df[['Industry']].fillna('Unknown'))
+    industry_encoded_df = pd.DataFrame(industry_encoded, columns=encoder.get_feature_names_out(['Industry']))
+    df = pd.concat([df.reset_index(drop=True), industry_encoded_df], axis=1)
+
+    ticker_industry_map = df.drop_duplicates('Ticker').set_index('Ticker')['Industry'].to_dict()
+
+    ticker_features_map = {
+        ticker: [
+            f.replace('_stationary', '') + '_scaled'
+            for f in granger_df[granger_df['Ticker'] == ticker]['Factor'].tolist()
+            if f.replace('_stationary', '') + '_scaled' in df.columns
+        ] + ['time_index_scaled', 'Close_scaled_diff', 'RSI_scaled', 'MACD_scaled', 'MACD_Signal_scaled'] + list(industry_encoded_df.columns) for ticker in tickers
+    }
+
+    cross_sector_edges = {
+        'Banking': ['IT', 'Energy'],
+        'Energy': ['Manufacturing', 'Industrials'],
+        'IT': ['Consumer'],
+        'Consumer': ['Retail'],
+        # Expand more if needed
+    }
+    with open('cross_sector_edges.json', 'r') as f:
+        cross_sector_edges = json.load(f)
+
+    node_features, node_labels, ticker_index_map = [], [], {}
+
+    for ticker in tickers:
+        sub_df = df[df['Ticker'] == ticker].dropna()
+        if sub_df.empty:
+            continue
+        last_row = sub_df.iloc[-1]
+        feat_vals = [last_row.get(f, 0.0) for f in sorted(set(f for feats in ticker_features_map.values() for f in feats))]
+        if pd.isna(last_row['Close_scaled']):
+            continue
+        x = torch.tensor(feat_vals, dtype=torch.float)
+        y = torch.tensor([last_row['Close_scaled']], dtype=torch.float)
+        ticker_index_map[ticker] = len(node_features)
+        node_features.append(x)
+        node_labels.append(y)
+
+    valid_tickers = list(ticker_index_map.keys())
+
+    edges = []
+    ticker_relations = {ticker: [] for ticker in valid_tickers}
+
+    for t1 in valid_tickers:
+        for t2 in valid_tickers:
+            if t1 == t2:
+                continue
+            granger_overlap = set(ticker_features_map[t1]) & set(ticker_features_map[t2])
+            industry_t1 = ticker_industry_map.get(t1, 'Unknown')
+            industry_t2 = ticker_industry_map.get(t2, 'Unknown')
+            industry_relation = industry_t2 in cross_sector_edges.get(industry_t1, [])
+
+            if granger_overlap or industry_relation:
+                edges.append([ticker_index_map[t1], ticker_index_map[t2]])
+                ticker_relations[t1].append((t2, len(granger_overlap), industry_relation))
+
+    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous() if edges else torch.empty((2, 0), dtype=torch.long)
+
+    # 🔥 Smarter recommendations
+    ticker_recommendations = {}
+    for ticker, related_list in ticker_relations.items():
+        if not related_list:
+            ticker_recommendations[ticker] = []
+            continue
+
+        # Sort: 1st by cross-sector match (industry_relation=True), then by highest feature overlap
+        sorted_related = sorted(
+            related_list,
+            key=lambda x: (not x[2], -x[1])  # prefer cross-sector True first, then higher granger overlap
+        )
+
+        # Take top 2
+        top_related = [r[0] for r in sorted_related[:2]]
+        ticker_recommendations[ticker] = top_related
+
+    graph_data = Data(x=torch.stack(node_features), edge_index=edge_index, y=torch.stack(node_labels).squeeze())
+
+    return graph_data, ticker_index_map, df, ticker_recommendations
+
+
+def forecast_future_prices(model, df, granger_df, ticker_recommendations, horizons=[30, 180, 365], n_samples=50):
+    model.eval()
+    tickers = df['Ticker'].unique()
+    forecasts = []
+
+    # One-Hot Encoding for Industry
+    encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    industry_encoded = encoder.fit_transform(df[['Industry']].fillna('Unknown'))
+    industry_encoded_df = pd.DataFrame(industry_encoded, columns=encoder.get_feature_names_out(['Industry']))
+    df = pd.concat([df.reset_index(drop=True), industry_encoded_df], axis=1)
+
+    for ticker in tickers:
+        sub_df = df[df['Ticker'] == ticker].dropna()
+        if sub_df.empty:
+            continue
+        last_row = sub_df.iloc[-1]
+
+        # Get relevant features
+        features = list(set(
+            [
+                f.replace('_stationary', '') + '_scaled'
+                for f in granger_df[granger_df['Ticker'] == ticker]['Factor'].tolist()
+                if f.replace('_stationary', '') + '_scaled' in df.columns
+            ] + ['time_index_scaled', 'Close_scaled_diff'] + list(industry_encoded_df.columns)
+        ))
+
+        mean_close = sub_df['Close'].mean()
+        std_close = sub_df['Close'].std()
+        base_time_idx = last_row['time_index']
+
+        for h in horizons:
+            new_time_index = base_time_idx + h
+            new_time_index_scaled = (new_time_index - sub_df['time_index'].mean()) / sub_df['time_index'].std()
+
+            # Prepare feature tensor
+            feat_vals = []
+            for f in features:
+                if f == 'time_index_scaled':
+                    feat_vals.append(new_time_index_scaled)
+                elif f == 'Close_scaled_diff':
+                    feat_vals.append(0.0)  # Assume momentum = 0
+                else:
+                    try:
+                        val = float(last_row[f])
+                        if pd.isna(val):
+                            val = 0.0
+                    except (KeyError, ValueError, TypeError):
+                        val = 0.0
+                    feat_vals.append(val)
+
+            x_tensor = torch.tensor([feat_vals], dtype=torch.float)
+            # Pad features if needed
+            x_tensor = torch.nn.functional.pad(x_tensor, (0, model.gat1.in_channels - x_tensor.shape[1]))
+
+            dummy_data = Data(x=x_tensor.repeat(2, 1), edge_index=torch.tensor([[0, 1], [1, 0]], dtype=torch.long))
+
+            # Monte Carlo Dropout: multiple forward passes
+            model.train()  # Enable dropout
+            predictions = []
+            for _ in range(n_samples):
+                with torch.no_grad():
+                    pred = model(dummy_data)[0].item()
+                    predictions.append(pred)
+
+            preds_np = np.array(predictions)
+            pred_mean_scaled = preds_np.mean()
+            pred_std_scaled = preds_np.std()
+
+            # Final unscaled forecasted price
+            pred_mean_unscaled = pred_mean_scaled * std_close + mean_close
+
+            # Confidence % Calculation
+            confidence_percent = max(0, min(100, 100 - (pred_std_scaled / abs(pred_mean_scaled)) * 100))
+
+            forecasts.append({
+                'Ticker': ticker,
+                'Forecast_Horizon_Days': h,
+                'Predicted_Close_Price': round(pred_mean_unscaled, 2),
+                'Confidence_%': round(confidence_percent, 2)
+            })
+
+    # Save to CSV
+    forecast_df = pd.DataFrame(forecasts)
+    forecast_df['Suggested_Related_Stocks'] = forecast_df['Ticker'].apply(lambda t: ', '.join(ticker_recommendations.get(t, [])))
+    forecast_csv_path = get_artifact_path("gnn_forecast_confidence_final.csv")
+    forecast_df.to_csv(forecast_csv_path, index=False)
+    print(f"📤 Final forecasts with confidence % saved to: {forecast_csv_path}")
+    
+    import networkx as nx
+from pyvis.network import Network
+
+def visualize_stock_network(ticker_index_map, ticker_recommendations, df):
+    # Create a NetworkX graph
+    G = nx.DiGraph()
+
+    # Reverse ticker_index_map
+    index_ticker_map = {v: k for k, v in ticker_index_map.items()}
+
+    # Map ticker to industry
+    ticker_industry_map = df.drop_duplicates('Ticker').set_index('Ticker')['Industry'].to_dict()
+
+    # Unique industries and color mapping
+    industries = list(set(ticker_industry_map.values()))
+    color_map = plt.colormaps.get_cmap('tab20')
+    industry_color = {
+        industry: f"#{''.join(f'{int(255*c):02x}' for c in color_map(i/len(industries))[:3])}"
+        for i, industry in enumerate(industries)
+    }
+
+    # Add Nodes
+    for ticker, industry in ticker_industry_map.items():
+        G.add_node(
+            ticker,
+            title=f"{ticker} ({industry})",
+            color=industry_color.get(industry, '#cccccc'),
+            shape='box',
+            size=15
+        )
+
+    # Add Edges based on recommendations
+    for ticker, related_list in ticker_recommendations.items():
+        for related_ticker in related_list:
+            G.add_edge(ticker, related_ticker)
+
+    # Visualize using pyvis
+    net = Network(height='800px', width='100%', bgcolor='#222222', font_color='white', directed=True)
+    net.from_nx(G)
+
+    output_path = get_artifact_path("stock_cross_sector_network.html")
+    net.save_graph(output_path)
+
+    print(f"✅ Interactive network graph saved to: {output_path}")
+
+
+
+
+# ---------- MAIN ----------
+if __name__ == "__main__":
+    df, granger_df = load_data()
+    #graph_data, ticker_index_map, full_df = build_graph(df, granger_df)
+    graph_data, ticker_index_map, full_df, ticker_recommendations = build_graph(df, granger_df)
+    visualize_stock_network(ticker_index_map, ticker_recommendations, full_df)
+    print("🔢 INPUT_FEATURE_SIZE =", graph_data.num_node_features)
+    #model = train_transformer(graph_data)
+    model = train_gcn(graph_data)
+    pred = evaluate(model, graph_data)
+    torch.save(model.state_dict(), get_artifact_path("hybrid_gnn_model.pt")) 
+    plot_scaled_predictions(graph_data, pred)
+    plot_unscaled_predictions(pred, graph_data, full_df, ticker_index_map)
+    forecast_future_prices(model, full_df, granger_df, ticker_recommendations)
+    plot_rsi_macd(df, ticker="RELIANCE")
+    plot_rsi_macd(df, ticker="INFY")
+    plot_rsi_macd(df, ticker="ADANIENT")
