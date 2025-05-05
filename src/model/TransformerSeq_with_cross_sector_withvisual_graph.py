@@ -237,18 +237,18 @@ class HybridGATTransformer(torch.nn.Module):
         x_trans = x_gat.unsqueeze(1)  # Add sequence dimension
         x_trans = self.pos_encoder(x_trans)
         x_trans = self.transformer_encoder(x_trans)
-        x_trans = x_trans.squeeze(1)
-        
+        x_trans = x_trans[:, 0, :]  # Extract sequence position 0 if Transformer expects [N, SeqLen, Dim]
+        x_combined = x_gat + x_trans 
         # Combine features
         x_combined = x_gat + x_trans  # Residual connection
         
         # Output layers
         x_out = self.linear1(x_combined)
         x_out = F.relu(x_out)
-        return self.linear2(x_out).squeeze()
+        return self.linear2(x_out).squeeze(-1)
 
 # [Previous train_gcn function is replaced with this new version]
-def train_gcn(graph_data, epochs=100):
+def train_gcn(graph_data, epochs=300):
     model = HybridGATTransformer(graph_data.num_node_features)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     loss_fn = torch.nn.MSELoss()
@@ -617,6 +617,7 @@ if __name__ == "__main__":
     #model = train_transformer(graph_data)
     model = train_gcn(graph_data)
     pred = evaluate(model, graph_data)
+    assert pred.shape == graph_data.y.shape, f"Shape mismatch: pred {pred.shape}, y {graph_data.y.shape}"
     torch.save(model.state_dict(), get_artifact_path("hybrid_gnn_model.pt")) 
     plot_scaled_predictions(graph_data, pred)
     plot_unscaled_predictions(pred, graph_data, full_df, ticker_index_map)
