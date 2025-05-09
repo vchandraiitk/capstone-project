@@ -59,7 +59,8 @@ causal analysis to understand key factors influencing stock market trends. The e
 
 ### HLD & Workflow
 
-![image](https://github.com/user-attachments/assets/8144cd95-2621-4626-8dcc-be055e83f912)
+<img width="1263" alt="image" src="https://github.com/user-attachments/assets/6a7915a6-7468-49fe-800e-c87328124eac" />
+
 
 ## 🛠️ How We Built It
 
